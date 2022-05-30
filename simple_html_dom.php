@@ -72,7 +72,11 @@ function file_get_html($url, $use_include_path = false, $context=null, $offset =
     // We DO force the tags to be terminated.
     $dom = new simple_html_dom(null, $lowercase, $forceTagsClosed, $target_charset, $stripRN, $defaultBRText, $defaultSpanText);
     // For sourceforge users: uncomment the next line and comment the retreive_url_contents line 2 lines down if it is not already done.
-    $contents = file_get_contents($url, $use_include_path, $context, $offset);
+    /*@onote: https://stackoverflow.com/a/44131040/7725002
+     * $contents = file_get_contents($url, $use_include_path, $context, $offset);
+     * */
+
+    $contents = file_get_contents($url, $use_include_path, $context);
     // Paperg - use our own mechanism for getting the contents as we want to control the timeout.
     //$contents = retrieve_url_contents($url);
     if (empty($contents) || strlen($contents) > MAX_FILE_SIZE)
@@ -679,8 +683,8 @@ class simple_html_dom_node
 // Notice the \[ starting the attbute?  and the @? following?  This implies that an attribute can begin with an @ sign that is not captured.
 // This implies that an html attribute specifier may start with an @ sign that is NOT captured by the expression.
 // farther study is required to determine of this should be documented or removed.
-//        $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
-        $pattern = "/([\w-:\*]*)(?:\#([\w-]+)|\.([\w-]+))?(?:\[@?(!?[\w-:]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
+//        $pattern = "/([\w\-:\*]*)(?:\#([\w\-]+)|\.([\w\-]+))?(?:\[@?(!?[\w\-]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
+        $pattern = "/([\w\-:\*]*)(?:\#([\w\-]+)|\.([\w\-]+))?(?:\[@?(!?[\w\-:]+)(?:([!*^$]?=)[\"']?(.*?)[\"']?)?\])?([\/, ]+)/is";
         preg_match_all($pattern, trim($selector_string).' ', $matches, PREG_SET_ORDER);
         if (is_object($debugObject)) {$debugObject->debugLog(2, "Matches Array: ", $matches);}
 
@@ -702,7 +706,9 @@ class simple_html_dom_node
             if (!empty($m[6])) {$val=$m[6];}
 
             // convert to lowercase
-            if ($this->dom->lowercase) {$tag=strtolower($tag); $key=strtolower($key);}
+            if ($this->dom->lowercase) {
+                $tag=($tag)?strtolower($tag):$tag; $key=($key)?strtolower($key):$key;
+            }
             //elements that do NOT have the specified attribute
             if (isset($key[0]) && $key[0]==='!') {$key=substr($key, 1); $no_key=true;}
 
@@ -886,7 +892,7 @@ class simple_html_dom_node
         {
             // Thanks to user gnarf from stackoverflow for this regular expression.
             $attributes = array();
-            preg_match_all("/([\w-]+)\s*:\s*([^;]+)\s*;?/", $this->attr['style'], $matches, PREG_SET_ORDER);
+            preg_match_all("/([\w\-]+)\s*:\s*([^;]+)\s*;?/", $this->attr['style'], $matches, PREG_SET_ORDER);
             foreach ($matches as $match) {
               $attributes[$match[1]] = $match[2];
             }
@@ -1361,7 +1367,7 @@ class simple_html_dom
             return true;
         }
 
-        if (!preg_match("/^[\w-:]+$/", $tag)) {
+        if (!preg_match("/^[\w\-:]+$/", $tag)) {
             $node->_[HDOM_INFO_TEXT] = '<' . $tag . $this->copy_until('<>');
             if ($this->char==='<') {
                 $this->link_nodes($node, false);
